@@ -56,10 +56,25 @@ import React from "../react";
 
 
 
-function App(props){
-  return <h1>H1,{props.name}!</h1>
-}
+// function App(props){
+//   return <h1>H1,{props.name}!</h1>
+// }
 
-const element = (<App name='foo'></App>)
+// const element = (<App name='foo'></App>)
+
+// React.render(element, document.getElementById("root"))
+
+function Counter() {
+  const [state, setState] = React.useState(1)
+  return (
+    <div>
+      <h1 >
+        Count: {state}
+      </h1>
+      <button onClick={() => setState(c => c + 1)}>+1</button>
+    </div>
+  )
+}
+const element = <Counter />
 
 React.render(element, document.getElementById("root"))

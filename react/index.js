@@ -1,6 +1,7 @@
 import {createElement} from "./createElement";
-import { render } from "./react-dom";
+import { render,useState } from "./react-dom";
 export default {
   createElement,
-  render
+  render,
+  useState
 }

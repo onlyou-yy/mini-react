@@ -6,6 +6,10 @@ let wipRoot = null;
 let currentRoot = null;
 // 需要删除的节点
 let deletions = null;
+// 当前处理中的fiber
+let wipFiber = null;
+// hooks的调用索引
+let hookIndex = null;
 
 /**
  * 渲染虚拟DOM到目标上
@@ -158,30 +162,6 @@ function reconcileChildren(wipFiber,elements){
   }
 }
 
-/**
- * 协调子节点
- * @param {*} fiber 
- */
-function updateHostComponent(fiber) {
-  // 如果fiber上没有dom节点，为其创建一个
-  if (!fiber.dom) {
-    fiber.dom = createDom(fiber)
-  }
-
-  // 获取到当前fiber的孩子节点
-  const elements = fiber.props.children
-  reconcileChildren(fiber, elements)
-}
-
-/**
- * 函数组件处理
- * @param {*} fiber 
- */
-function updateFunctionComponent(fiber) {
-  const children = [fiber.type(fiber.props)]
-  reconcileChildren(fiber, children)
-}
-
 /**执行单元任务
  * 1.将元素添加到 DOM
  * 2.为元素的子元素创建fiber
@@ -221,6 +201,73 @@ const isProperty = key => key !== "children" && !isEvent(key)
 const isNew = (prev, next) => key => prev[key] !== next[key]
 /**是否有旧属性 */
 const isGone = (prev, next) => key => !(key in next)
+
+/**
+ * 协调子节点
+ * @param {*} fiber 
+ */
+function updateHostComponent(fiber) {
+  // 如果fiber上没有dom节点，为其创建一个
+  if (!fiber.dom) {
+    fiber.dom = createDom(fiber)
+  }
+
+  // 获取到当前fiber的孩子节点
+  const elements = fiber.props.children
+  reconcileChildren(fiber, elements)
+}
+
+/**
+ * 函数组件处理
+ * @param {*} fiber 
+ */
+function updateFunctionComponent(fiber) {
+  wipFiber = fiber;
+  hookIndex = 0;//重置hooks调用索引
+  wipFiber.hooks = [];//当前函数组件依赖的hooks
+  const children = [fiber.type(fiber.props)]
+  reconcileChildren(fiber, children)
+}
+
+/**
+ * @param {*} initial 传进来的初始值
+ * @returns 
+ */
+export function useState(initial) {
+  // 检查是否有旧的hooks
+  const oldHook =
+    wipFiber.alternate &&
+    wipFiber.alternate.hooks &&
+    wipFiber.alternate.hooks[hookIndex]
+  // 如果有旧的，就复制到新的，如果没有初始化
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  }
+
+  const actions = oldHook ? oldHook.queue : []
+
+  actions.forEach(action => {
+    hook.state = typeof action === 'function' ? action(hook.state) : action
+  })
+
+  // 设置hooks状态
+  const setState = action => {
+    hook.queue.push(action)
+    // 设置一个新的正在进行的工作根作为下一个工作单元，这样工作循环就可以开始一个新的渲染阶段
+    wipRoot = {
+      dom: currentRoot.dom,
+      props: currentRoot.props,
+      alternate: currentRoot,
+    }
+    nextUnitOfWork = wipRoot
+    deletions = []
+  }
+
+  wipFiber.hooks.push(hook)
+  hookIndex++
+  return [hook.state, setState]
+}
 
 /**根据Fiber创建真实DOM */
 function createDom(fiber){
