@@ -169,10 +169,10 @@ function reconcileChildren(wipFiber,elements){
  */
 function performUnitOfWork(fiber){
   // 判断是否为函数
-  const isFunctionComponent =
-    fiber.type instanceof Function
-  if (isFunctionComponent) {
-    updateFunctionComponent(fiber)
+  if(fiber.type && typeof fiber.type === 'function'){
+    fiber.type.prototype.isReactComponent 
+      ? updateClassComponent(fiber)
+      : updateFunctionComponent(fiber)
   } else {
     // 更新普通节点
     updateHostComponent(fiber)
@@ -226,6 +226,16 @@ function updateFunctionComponent(fiber) {
   hookIndex = 0;//重置hooks调用索引
   wipFiber.hooks = [];//当前函数组件依赖的hooks
   const children = [fiber.type(fiber.props)]
+  reconcileChildren(fiber, children)
+}
+
+/**
+ * 类组件处理
+ * @param {*} fiber 
+ */
+function updateClassComponent(fiber){
+  const {type, props} = fiber;
+  const children = [new type(props).render()];
   reconcileChildren(fiber, children)
 }
 
