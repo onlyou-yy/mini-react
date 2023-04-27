@@ -55,14 +55,19 @@ function commitWork(fiber){
   if(!fiber){
     return
   }
+  let domParentFiber = fiber.parent
+  // 一直向上找，直到找到有dom的节点
+  while(!domParentFiber.dom){
+    domParentFiber = domParentFiber.parent
+  }
   // 将自己添加到父节点中
-  const domParent = fiber.parent.dom;
+  const domParent = domParentFiber.dom;
   if(fiber.effectTag === "PLACEMENT" && fiber.dom != null){
     // 处理新增节点标记
     domParent.appendChild(fiber.dom);
   }else if(fiber.effectTag === "DELETION"){
     // 处理删除节点标记
-    domParent.removeChild(fiber.dom);
+    commitDeletion(fiber,domParent);
   }else if(fiber.effectTag === "UPDATE" && fiber.dom != null){
     // 处理更新属性
     updateDom(fiber.dom,fiber.alternate.props,fiber.props)
@@ -87,7 +92,7 @@ function commitRoot(){
  * @param {*} wipFiber 当前fiber
  * @param {*} elements 子虚拟DOM
  */
-function reconcoleChildren(wipFiber,elements){
+function reconcileChildren(wipFiber,elements){
   // 索引
   let index = 0
   // 上一个兄弟节点
@@ -153,20 +158,45 @@ function reconcoleChildren(wipFiber,elements){
   }
 }
 
+/**
+ * 协调子节点
+ * @param {*} fiber 
+ */
+function updateHostComponent(fiber) {
+  // 如果fiber上没有dom节点，为其创建一个
+  if (!fiber.dom) {
+    fiber.dom = createDom(fiber)
+  }
+
+  // 获取到当前fiber的孩子节点
+  const elements = fiber.props.children
+  reconcileChildren(fiber, elements)
+}
+
+/**
+ * 函数组件处理
+ * @param {*} fiber 
+ */
+function updateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)]
+  reconcileChildren(fiber, children)
+}
+
 /**执行单元任务
  * 1.将元素添加到 DOM
  * 2.为元素的子元素创建fiber
  * 3.选择下一个工作单元
  */
 function performUnitOfWork(fiber){
-  //如果fiber的dom还没有创建就先创建
-  if(!fiber.dom){
-    fiber.dom = createDom(fiber);
+  // 判断是否为函数
+  const isFunctionComponent =
+    fiber.type instanceof Function
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber)
+  } else {
+    // 更新普通节点
+    updateHostComponent(fiber)
   }
-
-  // 获取到当前fiber的孩子节点
-  const elements = fiber.props.children
-  reconcoleChildren(fiber,elements);
 
   // 寻找下一个孩子节点，如果有返回
   if (fiber.child) {
@@ -258,4 +288,17 @@ function updateDom(dom, prevProps, nextProps) {
         nextProps[name]
       )
     })
+}
+
+/**
+ * 删除情况下，不断的向下找，直到找到有dom的子节点
+ * @param {*} fiber 
+ * @param {*} domParent 
+ */
+function commitDeletion(fiber, domParent) {
+  if (fiber.dom) {
+    domParent.removeChild(fiber.dom)
+  } else {
+    commitDeletion(fiber.child, domParent)
+  }
 }
