@@ -64,3 +64,11 @@ const FiberNode = {
 2. children是通过运行函数得到的而不是props
 
 
+
+
+来源：
+https://juejin.cn/post/7023319961883901988#heading-67
+
+参考：
+https://www.yuque.com/linhe-8mnf5/fxyxkm/daa695
+https://kasong.gitee.io/just-react/process/doubleBuffer.html#%E4%BB%80%E4%B9%88%E6%98%AF-%E5%8F%8C%E7%BC%93%E5%AD%98
