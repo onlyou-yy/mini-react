@@ -13,29 +13,43 @@ import React from "../react";
 const container = document.getElementById("root")
 
 const updateValue = e => {
-  rerender(e.target.value)
+  isTemp1 
+  ? rerender1(e.target.value)
+  : rerender2(e.target.value)
 }
 
-const rerender = value => {
+let isTemp1 = true;
+const changeTemp = ()=>{
+  isTemp1 = !isTemp1;
+  if(isTemp1){
+    rerender1("temp 1");
+  }else{
+    rerender2("temp 2")
+  }
+}
+
+const rerender1 = value => {
   const element = (
     <div>
       <h1>temp 1</h1>
       <input onInput={updateValue} value={value} />
       <h2>Hello mini {value}</h2>
+      <button onClick={changeTemp}>change temp 2</button>
     </div>
   )
   React.render(element, container)
-
-  setTimeout(()=>{
-    const element = (
-      <div>
-        <h1>temp 2</h1>
-        <input onInput={updateValue} value={value} />
-        <h2>Hello react {value}</h2>
-      </div>
-    )
-    React.render(element, container)
-  },2000)
 }
 
-rerender("World")
+const rerender2 = value => {
+  const element = (
+    <div>
+      <h1>temp 2</h1>
+      <input onInput={updateValue} value={value} />
+      <h2>Hello react {value}</h2>
+      <button onClick={changeTemp}>change temp 2</button>
+    </div>
+  )
+  React.render(element, container)
+}
+
+rerender1("World")
